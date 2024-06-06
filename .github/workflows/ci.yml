@@ -1,0 +1,28 @@
+name: "Continuous Integration"
+on:
+    push:
+    pull_request:
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                php: [8.2]
+        name: "PHP: ${{ matrix.php }}"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+
+            - name: Install PHP
+              uses: shivammathur/setup-php@v2
+              with:
+                  php-version: ${{ matrix.php }}
+                  coverage: none
+                  tools: phpunit:8.5
+
+            - name: Composer install
+              run: "composer install --prefer-dist --no-interaction"
+
+            - name: PHPunit
+              run: phpunit

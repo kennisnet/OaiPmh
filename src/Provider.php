@@ -1,20 +1,20 @@
 <?php
 
 /*
- * This file is part of Picturae\Oai-Pmh.
+ * This file is part of Kennisnet\OaiPmh.
  *
- * Picturae\Oai-Pmh is free software: you can redistribute it and/or modify
+ * Kennisnet\OaiPmh is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Picturae\Oai-Pmh is distributed in the hope that it will be useful,
+ * Kennisnet\OaiPmh is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Picturae\Oai-Pmh.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Kennisnet\OaiPmh.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 namespace Kennisnet\OaiPmh;
@@ -37,14 +37,12 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
- * Class Provider
- *
  * @example
  * <code>
  *
  * //create provider object
- * $provider = new Picturae\OaiPmh\Provider($someRepository);
- * //where some $someRepository is an implementation of \Picturae\OaiPmh\Interfaces\Repository
+ * $provider = new Kennisnet\OaiPmh\Provider($someRepository);
+ * //where some $someRepository is an implementation of \Kennisnet\OaiPmh\Interfaces\Repository
  *
  * // add request variables, this could be just $_GET or $_POST in case of a post but can also come from a different
  * // source
@@ -56,7 +54,6 @@ use Psr\Log\NullLogger;
  * //output headers, body and then exit (it is possible to do manipulations before outputting but this is not advised.
  * $response->outputAndExit();
  * </code>
- * @package Picturae\OaiPmh
  */
 class Provider
 {
@@ -71,56 +68,41 @@ class Provider
      *     ListRecords: string[]
      *}
      */
-    private static            $verbs = [
-        "Identify"            => [],
+    private static $verbs = [
+        "Identify" => [],
         "ListMetadataFormats" => ['identifier'],
-        "ListSets"            => ['resumptionToken'],
-        "GetRecord"           => ['identifier', 'metadataPrefix'],
-        "ListIdentifiers"     => ['from', 'until', 'metadataPrefix', 'set', 'resumptionToken'],
-        "ListRecords"         => ['from', 'until', 'metadataPrefix', 'set', 'resumptionToken']
+        "ListSets" => ['resumptionToken'],
+        "GetRecord" => ['identifier', 'metadataPrefix'],
+        "ListIdentifiers" => ['from', 'until', 'metadataPrefix', 'set', 'resumptionToken'],
+        "ListRecords" => ['from', 'until', 'metadataPrefix', 'set', 'resumptionToken'],
     ];
 
     protected LoggerInterface $logger;
 
-    /**
-     * @var string the verb of the current request
-     */
-    private $verb;
+    private string $verb;
 
-    /**
-     * @var ResponseDocument
-     */
-    private $response;
+    private ResponseDocument $response;
 
-    /**
-     * @var Repository
-     */
-    private $repository;
+    private Repository $repository;
 
     /**
      * @var array<mixed,mixed>
      */
-    private $params = [];
+    private array $params = [];
+
+    private ?ServerRequestInterface $request;
 
     /**
-     * @var ServerRequestInterface
+     * @var array<int, XmlSaveString|\DOMDocument>
      */
-    private $request;
+    private array $records = [];
 
-    /**
-     * @var array<int, XmlSaveString>
-     */
-    private $records = [];
-
-    /**
-     * @param Repository             $repository
-     * @param ServerRequestInterface $request
-     */
     public function __construct(
-        Repository             $repository,
-        ServerRequestInterface $request = null,
-        LoggerInterface        $logger = null
-    ) {
+        Repository $repository,
+        ?ServerRequestInterface $request = null,
+        ?LoggerInterface $logger = null
+    )
+    {
         if ($logger === null) {
             $this->logger = new NullLogger();
         } else {
@@ -134,10 +116,7 @@ class Provider
         }
     }
 
-    /**
-     * @return ServerRequestInterface
-     */
-    public function getRequest(): ServerRequestInterface
+    public function getRequest(): ?ServerRequestInterface
     {
         return $this->request;
     }
@@ -190,8 +169,13 @@ class Provider
             foreach ($this->response->getDocument()->getElementsByTagName('metadata') as $item) {
                 $record = array_shift($this->records);
                 if (isset($record)) {
-
-                    $item->nodeValue = (string)$record;
+                    if ($record instanceof \DOMDocument) {
+                        /*                        $content = trim(str_replace('<?xml version="1.0"?>', '', $record->saveXML()),"\n\t\0 ");*/
+                        $node = $this->response->getDocument()->importNode($record->documentElement, true);
+                        $item->appendChild($node);
+                    } else {
+                        $item->nodeValue = (string)$record;
+                    }
                 }
             }
         } catch (MultipleExceptions $errors) {
@@ -260,11 +244,11 @@ class Provider
                     $this->params['metadataPrefix'],
                     isset($this->params['identifier']) ? $this->params['identifier'] : null
                 );
-            }
+            },
         ];
         $this->doChecks($checks);
 
-        $record     = $this->repository->getRecord($this->params['metadataPrefix'], $this->params['identifier']);
+        $record = $this->repository->getRecord($this->params['metadataPrefix'], $this->params['identifier']);
         $recordNode = $this->response->createElement('record');
 
         $header = $record->getHeader();
@@ -292,7 +276,7 @@ class Provider
 
     private function identify(): DOMElement
     {
-        $identity     = $this->repository->identify();
+        $identity = $this->repository->identify();
         $identityNode = $this->response->createElement('Identify');
 
         // create a node for each property of identify
@@ -326,7 +310,7 @@ class Provider
         $listNode = $this->response->createElement('ListMetadataFormats');
 
         $identifier = $this->params['identifier'] ?? null;
-        $formats    = $this->repository->listMetadataFormats($identifier);
+        $formats = $this->repository->listMetadataFormats($identifier);
 
         if (!count($formats)) {
             throw new NoMetadataFormatsException("There are no metadata formats available for the specified item.");
@@ -453,12 +437,14 @@ class Provider
 
             // Only add metadata and about if the record is not deleted.
             if (!$header->isDeleted()) {
+
                 $recordNode->appendChild(
-                    $this->response->createElement('metadata', (string)$record->getMetadata())
+
+                    $this->response->createElement('metadata')
                 );
 
-                // Push the record itself on the records stack
-                array_push($this->records, (string)$record->getMetadata());
+                // Push the record itself on the records stack and will be added to the response body in the self::getResponse()
+                array_push($this->records, $record->getMetadata());
 
                 //only add an 'about' node if it's not null
                 $about = $record->getAbout();
@@ -564,21 +550,21 @@ class Provider
         $timezone = new \DateTimeZone("UTC");
 
         if (preg_match('#^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$#', $date)) {
-            $parsedDate  = date_create_from_format('Y-m-d\TH:i:s\Z', $date, $timezone);
+            $parsedDate = date_create_from_format('Y-m-d\TH:i:s\Z', $date, $timezone);
             $granularity = Identity::GRANULARITY_YYYY_MM_DDTHH_MM_SSZ;
         } elseif (preg_match('#^\d{4}-\d{2}-\d{2}$#', $date)) {
             // Add ! to format to set time to 00:00:00
-            $parsedDate  = date_create_from_format('!Y-m-d', $date, $timezone);
+            $parsedDate = date_create_from_format('!Y-m-d', $date, $timezone);
             $granularity = Identity::GRANULARITY_YYYY_MM_DD;
         } else {
             throw new BadArgumentException("Expected a data in one of the following formats: " .
-                                           Identity::GRANULARITY_YYYY_MM_DDTHH_MM_SSZ . " OR " .
-                                           Identity::GRANULARITY_YYYY_MM_DD . " FOUND " . $date);
+                Identity::GRANULARITY_YYYY_MM_DDTHH_MM_SSZ . " OR " .
+                Identity::GRANULARITY_YYYY_MM_DD . " FOUND " . $date);
         }
 
         /** @var array{error_count: int, warning_count: int} $parseResult */
         $parseResult = date_get_last_errors();
-        if (!$parsedDate || (($parseResult['error_count']??0) > 0) || (($parseResult['warning_count']??0) > 0)) {
+        if (!$parsedDate || (($parseResult['error_count'] ?? 0) > 0) || (($parseResult['warning_count'] ?? 0) > 0)) {
             throw new BadArgumentException("$date is not a valid date");
         }
 
@@ -596,7 +582,7 @@ class Provider
 
         if ($resultList->getResumptionToken()) {
             $resumptionTokenNode = $this->response->createElement('resumptionToken', $resultList->getResumptionToken());
-        } elseif ($resultList->getCompleteListSize() !== null || $resultList->getCursor() !== 0) {
+        } elseif ($resultList->getCompleteListSize() !== null || $resultList->getCursor() !== null) {
             // An empty resumption token with attributes completeListSize and/or cursor.
             $resumptionTokenNode = $this->response->createElement('resumptionToken');
         }
@@ -606,7 +592,7 @@ class Provider
                 $resumptionTokenNode->setAttribute('completeListSize', (string)$resultList->getCompleteListSize());
             }
 
-            if ($resultList->getCursor() !== 0) {
+            if ($resultList->getCursor() !== null) {
                 $resumptionTokenNode->setAttribute('cursor', (string)$resultList->getCursor());
             }
 
@@ -621,12 +607,12 @@ class Provider
      */
     private function getRecordListParams(): array
     {
-        $metadataPrefix   = null;
-        $from             = null;
-        $until            = null;
-        $fromGranularity  = null;
+        $metadataPrefix = null;
+        $from = null;
+        $until = null;
+        $fromGranularity = null;
         $untilGranularity = null;
-        $set              = isset($this->params['set']) ? $this->params['set'] : null;
+        $set = isset($this->params['set']) ? $this->params['set'] : null;
 
         $checks = [
             function () use (&$from, &$fromGranularity) {
@@ -678,7 +664,7 @@ class Provider
                     throw new BadArgumentException("Only one metadataPrefix allowed");
                 }
                 $this->checkMetadataPrefix($metadataPrefix);
-            }
+            },
         ];
 
         $this->doChecks($checks);
@@ -688,10 +674,6 @@ class Provider
 
     /**
      * Checks if the metadata prefix is in the available metadata formats list.
-     *
-     * @param string $metadataPrefix
-     * @param string $identifier , optional argument that specifies the unique identifier of an item
-     *
      * @throws CannotDisseminateFormatException
      */
     private function checkMetadataPrefix(string $metadataPrefix, string $identifier = null): void
@@ -718,7 +700,10 @@ class Provider
 
     private function logException(\Exception $exception)
     {
-        $this->logger->critical($exception->getMessage(), ['request' => $this->request->getAttributes()]);
-
+        if (isset($this->request)) {
+            $this->logger->critical($exception->getMessage(), ['request' => $this->request ? $this->request->getAttributes() : '']);
+        } else {
+            $this->logger->critical($exception->getMessage(), ['request' => null]);
+        }
     }
 }

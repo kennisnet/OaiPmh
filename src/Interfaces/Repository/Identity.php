@@ -1,24 +1,25 @@
 <?php
 
 /*
- * This file is part of Picturae\Oai-Pmh.
+ * This file is part of Kennisnet\OaiPmh.
  *
- * Picturae\Oai-Pmh is free software: you can redistribute it and/or modify
+ * Kennisnet\OaiPmh is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * Picturae\Oai-Pmh is distributed in the hope that it will be useful,
+ * Kennisnet\OaiPmh is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Picturae\Oai-Pmh.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Kennisnet\OaiPmh.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 namespace Kennisnet\OaiPmh\Interfaces\Repository;
 
+use DateTimeInterface;
 use Kennisnet\OaiPmh\XmlSaveString;
 
 interface Identity
@@ -46,19 +47,17 @@ interface Identity
     const DELETED_RECORD_TRANSIENT = 'transient';
 
     /**
-     * @return string
      * a human readable name for the repository
      */
-    public function getRepositoryName();
+    public function getRepositoryName(): string;
 
     /**
-     * @return \DateTime
      * a datetime that is the guaranteed lower limit of all datestamps recording changes,modifications, or deletions
      * in the repository. A repository must not use datestamps lower than the one specified
      * by the content of the earliestDatestamp element. earliestDatestamp must be expressed at the finest granularity
      * supported by the repository.
      */
-    public function getEarliestDatestamp();
+    public function getEarliestDatestamp(): DateTimeInterface;
 
     /**
      * the manner in which the repository supports the notion of deleted records. Legitimate values are:

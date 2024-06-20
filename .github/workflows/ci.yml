@@ -19,7 +19,7 @@ jobs:
               with:
                   php-version: ${{ matrix.php }}
                   coverage: none
-                  tools: phpunit:8.5
+                  tools: phpunit:9.5
 
             - name: Composer install
               run: "composer install --prefer-dist --no-interaction"

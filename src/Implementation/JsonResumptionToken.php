@@ -9,50 +9,16 @@ use Kennisnet\OaiPmh\Interfaces\ResumptionToken;
 
 class JsonResumptionToken implements ResumptionToken
 {
-    /**
-     * @var int
-     */
-    protected $offset;
-
-    /**
-     * @var int
-     */
-    protected $limit = 100;
-
-    /**
-     * @var DateTimeInterface|null
-     */
-    protected $from;
-
-    /**
-     * @var DateTimeInterface|null
-     */
-    protected $until;
-
-    /**
-     * @var string|null
-     */
-    protected $metadataPrefix;
-
-    /**
-     * @var string|null
-     */
-    protected $set;
 
     public function __construct(
-        int               $offset = 0,
-        int               $limit = 100,
-        DateTimeInterface $from = null,
-        DateTimeInterface $until = null,
-        ?string           $metadataPrefix = null,
-        ?string           $set = null
-    ) {
-        $this->offset         = $offset;
-        $this->limit          = $limit;
-        $this->from           = $from;
-        $this->until          = $until;
-        $this->metadataPrefix = $metadataPrefix;
-        $this->set            = $set;
+        private readonly int $offset = 0,
+        private readonly int $limit = 100,
+        private readonly null|DateTimeInterface $from = null,
+        private readonly null|DateTimeInterface $until = null,
+        private readonly ?string $metadataPrefix = null,
+        private readonly ?string $set = null
+    )
+    {
     }
 
     public static function createFromString(string $jsonResumptionToken): self
@@ -108,12 +74,12 @@ class JsonResumptionToken implements ResumptionToken
     public function encode(): string
     {
         $tokenData = [
-            'from'           => $this->from ? $this->from->getTimestamp() : null,
-            'limit'          => $this->limit(),
-            'until'          => $this->until ? $this->until->getTimestamp() : null,
-            'set'            => $this->set,
-            'offset'         => $this->offset,
-            'metadataPrefix' => $this->metadataPrefix
+            'from' => $this->from?->getTimestamp(),
+            'limit' => $this->limit(),
+            'until' => $this->until?->getTimestamp(),
+            'set' => $this->set,
+            'offset' => $this->offset,
+            'metadataPrefix' => $this->metadataPrefix,
         ];
 
         return base64_encode(json_encode($tokenData) ?: '') ?: '';

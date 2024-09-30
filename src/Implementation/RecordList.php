@@ -53,7 +53,7 @@ class RecordList implements RecordListInterface
         return $this->completeListSize;
     }
 
-    public function getCursor(): int
+    public function getCursor(): ?int
     {
         return $this->cursor;
     }

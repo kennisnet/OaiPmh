@@ -30,5 +30,5 @@ interface ResultList
 
     public function getCompleteListSize(): ?int;
 
-    public function getCursor(): int;
+    public function getCursor(): ?int;
 }

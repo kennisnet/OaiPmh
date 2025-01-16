@@ -751,5 +751,33 @@ class ProviderTest extends TestCase
 
         return $mock;
     }
+
+    public function testToUtcDateTimeWithDateTimeImmutable()
+    {
+        $reflection = new \ReflectionClass($provider = $this->getProvider());
+        $method = $reflection->getMethod('toUtcDateTime');
+        $method->setAccessible(true);
+
+        $dateTimeImmutable = new \DateTimeImmutable('2025-01-16 15:00:00', new \DateTimeZone('Europe/Amsterdam'));
+        $expected = '2025-01-16T14:00:00Z';
+
+        $result = $method->invoke($provider, $dateTimeImmutable);
+
+        $this->assertEquals($expected, $result);
+    }
+
+    public function testToUtcDateTimeWithDateTime()
+    {
+        $reflection = new \ReflectionClass($provider = $this->getProvider());
+        $method = $reflection->getMethod('toUtcDateTime');
+        $method->setAccessible(true);
+
+        $dateTime = new \DateTime('2025-01-16 15:00:00', new \DateTimeZone('Europe/Amsterdam'));
+        $expected = '2025-01-16T14:00:00Z';
+
+        $result = $method->invoke($provider, $dateTime);
+
+        $this->assertEquals($expected, $result);
+    }
 }
 

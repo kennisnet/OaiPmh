@@ -578,7 +578,7 @@ class ProviderTest extends TestCase
             )
         );
 
-        $listFormats = function ($identifier = null) {
+        $listFormats = function (?string $identifier = null) {
             switch ($identifier) {
                 case "a":
                 case "deleted":
@@ -732,7 +732,7 @@ class ProviderTest extends TestCase
         )->with();
 
 
-        $getRecords = function ($metadataFormat = null, $identifier = null) use ($someRecord, $deletedRecord) {
+        $getRecords = function (?string $metadataFormat = null, ?string $identifier = null) use ($someRecord, $deletedRecord) {
             switch ($identifier) {
                 case "a":
                     return $someRecord;

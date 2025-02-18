@@ -133,8 +133,13 @@ class Provider
 
     private function toUtcDateTime(\DateTimeInterface $time): string
     {
-        $UTC = new \DateTimeZone("UTC");
-        if (method_exists($time, 'setTimezone')) {
+        $UTC = new \DateTimeZone('UTC');
+
+        if ($time instanceof \DateTimeImmutable) {
+            $time = $time->setTimezone($UTC);
+        }
+
+        if ($time instanceof \DateTime) {
             $time->setTimezone($UTC);
         }
 

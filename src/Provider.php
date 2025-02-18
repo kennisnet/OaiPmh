@@ -681,7 +681,7 @@ class Provider
      * Checks if the metadata prefix is in the available metadata formats list.
      * @throws CannotDisseminateFormatException
      */
-    private function checkMetadataPrefix(string $metadataPrefix, string $identifier = null): void
+    private function checkMetadataPrefix(string $metadataPrefix, ?string $identifier = null): void
     {
         $availableMetadataFormats = $this->repository->listMetadataFormats($identifier);
 

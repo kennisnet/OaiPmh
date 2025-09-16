@@ -3,7 +3,6 @@
   "description": "This package can be used to create an OAI endpoint",
   "homepage": "https://github.com/kennisnet/oaipmh",
   "license": "MIT",
-  "version": "2.2.1",
   "autoload": {
     "psr-4": {
       "Kennisnet\\OaiPmh\\": "src/"

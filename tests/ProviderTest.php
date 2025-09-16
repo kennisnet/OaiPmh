@@ -20,6 +20,7 @@
 
 namespace Test\Kennisnet\OaiPmh;
 
+use Kennisnet\OaiPmh\Exception\NoRecordsMatchException;
 use Kennisnet\OaiPmh\Implementation\XMLRecord;
 use Kennisnet\OaiPmh\Provider;
 use Laminas\Diactoros\ServerRequest;
@@ -33,6 +34,7 @@ use Kennisnet\OaiPmh\Implementation\Repository\Identity;
 use Kennisnet\OaiPmh\Implementation\Set;
 use Kennisnet\OaiPmh\Implementation\SetList;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Log\LoggerInterface;
 
 class ProviderTest extends TestCase
 {
@@ -136,11 +138,19 @@ class ProviderTest extends TestCase
         );
 
         if ($this->xpathExists($response, '//oai:error')) {
-            $this->assertMatchesRegularExpression(
-                '#^4\d{2}$#',
-                (string)$response->getStatusCode(),
-                "Expected some kind of 4xx header found: " . $response->getStatusCode()
-            );
+            if ($this->xpathExists($response, '//oai:error[@code="noRecordsMatch"]')) {
+                $this->assertEquals(
+                    200,
+                    $response->getStatusCode(),
+                    "Expected 200 OK for noRecordsMatch, found: " . $response->getStatusCode()
+                );
+            } else {
+                $this->assertMatchesRegularExpression(
+                    '#^4\d{2}$#',
+                    (string)$response->getStatusCode(),
+                    "Expected some kind of 4xx header, found: " . $response->getStatusCode()
+                );
+            }
         }
 
         try {
@@ -714,6 +724,13 @@ class ProviderTest extends TestCase
                         100,
                         0
                     );
+                case 'empty:set':
+                    return new RecordList(
+                        [],
+                        null,
+                        0,
+                        0
+                    );
                 default:
                     return new RecordList(
                         [
@@ -778,6 +795,27 @@ class ProviderTest extends TestCase
         $result = $method->invoke($provider, $dateTime);
 
         $this->assertEquals($expected, $result);
+    }
+
+    public function testNoRecordsMatchIsCaughtAndNotLogged(): void
+    {
+        $repo = $this->getProvider();
+        $request = (new ServerRequest())->withQueryParams([
+            'verb' => 'ListRecords',
+            'metadataPrefix' => 'oai_dc',
+            'set' => 'empty:set',
+        ]);
+
+        $repo->setRequest($request);
+        $response = $repo->getResponse();
+
+        $this->assertValidResponse($response);
+        $this->assertXPathExists($response, "/oai:OAI-PMH/oai:error[@code='noRecordsMatch']");
+
+        $this->assertXPathNotExists($response, "/oai:OAI-PMH/oai:ListRecords/oai:record");
+        $this->assertXPathNotExists($response, "/oai:OAI-PMH/oai:ListRecords/oai:resumptionToken");
+
+        $this->assertEquals(200, $response->getStatusCode());
     }
 }
 

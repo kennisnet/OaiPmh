@@ -183,6 +183,8 @@ class Provider
                     }
                 }
             }
+        } catch (NoRecordsMatchException $error) {
+            $this->response->addError($error);
         } catch (MultipleExceptions $errors) {
             //multiple errors happened add all of the to the response
             foreach ($errors as $error) {
